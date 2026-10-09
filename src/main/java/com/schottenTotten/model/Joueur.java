@@ -22,62 +22,27 @@ import java.util.List;
  * de ai et de controller (imports ci-dessus). Ça marche, mais une alternative plus
  * "propre" serait de sortir la stratégie du Joueur. À garder en tête, pas urgent.
  */
+
 public class Joueur {
 
     private final String nom;
-    private final int position;
-    private final List<Carte> main = new ArrayList<>();
+    //private final int position;
+    //private final List<Carte> main = new ArrayList<>();
     private final Strategie strategie;
-    // TODO (plus tard, Schotten-Totten 2) : private Role role;  (ASSAILLANT / DEFENSEUR)
+    
+    public piocher(){
 
-    public Joueur(String nom, int position, Strategie strategie) {
-        if (nom == null || nom.isBlank()) {
-            throw new IllegalArgumentException("Nom vide");
-        }
-        this.nom = nom;
-        this.position = position;
-        this.strategie = strategie;
     }
 
-    public void piocher(Pioche pioche) {
-        main.add(pioche.piocher());
+    public jouerCarte(int, Borne){
+
     }
 
-    /** Pose la carte n°index de sa main sur la borne. */
-    public void jouerCarte(int index, Borne borne) {
-        Carte carte = main.get(index);
-        borne.ajouterCarte(this, carte);   // si ça lève une exception, la carte reste dans la main
-        main.remove(index);
+    public retirerCarte(int){
+
     }
 
-    public Carte retirerCarte(int index) {
-        return main.remove(index);
-    }
+    public choisirCoup(jeu){
 
-    /** Uniquement pour une IA. */
-    public Coup choisirCoup(Jeu jeu) {
-        return strategie.choisirCoup(jeu, this);
-    }
-
-    public boolean estHumain() {
-        return strategie == null;
-    }
-
-    public String getNom() {
-        return nom;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    /** Lecture seule : impossible de faire getMain().add(...) depuis l'extérieur (encapsulation). */
-    public List<Carte> getMain() {
-        return Collections.unmodifiableList(main);
-    }
-
-    @Override
-    public String toString() {
-        return nom;
     }
 }
