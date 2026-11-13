@@ -78,26 +78,28 @@ public abstract class Jeu {
         Joueur joueur = joueurs[joueurCourant];
         vue.afficherMessage("\n--- Tour de " + joueur.getNom() + " ---");
 
-        Coup coup;
-        if (joueur.estHumain()) {
-            vue.afficherPlateau(joueurs[0], joueurs[1], bornes, getTaillePioche());
-            vue.afficherMain(joueur);
-            coup = new Coup(vue.demanderCarte(joueur), vue.demanderBorne(NB_BORNES));
-        } else {
-            coup = joueur.choisirCoup(this);
-        }
-
-        if (coup == null) {
+        // On vérifie AVANT de demander quoi que ce soit. Si aucun coup n'est possible
+        // (main vide, ou toutes les bornes pleines/revendiquées de son côté), on passe le tour.
+        // Sans ça, un humain resterait bloqué pour toujours dans la boucle de demanderCoupValide,
+        // puisque aucune réponse ne pourrait être acceptée.
+        if (!aUnCoupPossible(joueur)) {
             vue.afficherMessage(joueur.getNom() + " ne peut pas jouer et passe son tour.");
             return;
         }
 
-        // TODO (étape 5) : au lieu de passer le tour, REDEMANDER tant que le coup est invalide.
-        //   Indice : une boucle while (!estCoupValide(joueur, coup)) { message ; coup = ... }
-        //   (pour un humain on redemande à la vue, pour une IA à joueur.choisirCoup(this))
-        if (!estCoupValide(joueur, coup)) {
-            vue.afficherMessage("Coup invalide, tour perdu ! (étape 5 à faire)");
-            return;
+        Coup coup;
+        if (joueur.estHumain()) {
+            vue.afficherPlateau(joueurs[0], joueurs[1], bornes, getTaillePioche());
+            vue.afficherMain(joueur);
+            coup = demanderCoupValide(joueur);   // ne revient qu'avec un coup valide
+        } else {
+            coup = joueur.choisirCoup(this);
+            // Une IA, c'est NOTRE code : si elle propose un coup invalide, c'est un bug à corriger,
+            // pas une faute de frappe. On lève une exception pour le voir tout de suite, plutôt que
+            // de redemander (une IA déterministe redonnerait le même coup : boucle infinie).
+            if (coup == null || !estCoupValide(joueur, coup)) {
+                throw new IllegalStateException("L'IA de " + joueur.getNom() + " a proposé un coup invalide : " + coup);
+            }
         }
 
         joueur.jouerCarte(coup.indexCarte(), bornes.get(coup.indexBorne()));
@@ -110,12 +112,61 @@ public abstract class Jeu {
         }
     }
 
-    /** Un coup est valide si les index existent, que la borne est libre et que son côté n'est pas plein. */
-    public boolean estCoupValide(Joueur joueur, Coup coup) {
-        if (coup.indexCarte() < 0 || coup.indexCarte() >= joueur.getMain().size()) return false;
-        if (coup.indexBorne() < 0 || coup.indexBorne() >= NB_BORNES) return false;
+    /**
+     * Étape 5 : redemande à l'humain tant que son coup n'est pas valide,
+     * en lui expliquant à chaque fois POURQUOI le coup est refusé.
+     * La vue vérifie déjà que l'utilisateur tape un nombre dans le bon intervalle ;
+     * ici on vérifie les RÈGLES du jeu (borne revendiquée, côté plein...).
+     */
+    private Coup demanderCoupValide(Joueur joueur) {
+        while (true) {
+            Coup coup = new Coup(vue.demanderCarte(joueur), vue.demanderBorne(NB_BORNES));
+            String erreur = raisonCoupInvalide(joueur, coup);
+            if (erreur == null) {          // null = aucune raison de refuser : le coup est valide
+                return coup;
+            }
+            vue.afficherMessage("Coup refusé : " + erreur + ". Recommence.");
+        }
+    }
+
+    /**
+     * Explique pourquoi un coup est interdit, ou renvoie null s'il est valide.
+     * C'est le SEUL endroit qui contient les règles de validité : estCoupValide l'utilise aussi,
+     * donc si on ajoute une règle (variante tactique...), il suffit de la mettre ici.
+     */
+    public String raisonCoupInvalide(Joueur joueur, Coup coup) {
+        if (coup.indexCarte() < 0 || coup.indexCarte() >= joueur.getMain().size()) {
+            return "cette carte n'est pas dans ta main";
+        }
+        if (coup.indexBorne() < 0 || coup.indexBorne() >= NB_BORNES) {
+            return "cette borne n'existe pas";
+        }
         Borne borne = bornes.get(coup.indexBorne());
-        return !borne.estRevendiquee() && !borne.estComplete(joueur);
+        int numero = coup.indexBorne() + 1;   // pour l'affichage : l'utilisateur compte à partir de 1
+        if (borne.estRevendiquee()) {
+            return "la borne " + numero + " est déjà revendiquée par " + borne.getProprietaire().getNom();
+        }
+        if (borne.estComplete(joueur)) {
+            return "ton côté de la borne " + numero + " est déjà plein (" + Borne.CAPACITE + " cartes)";
+        }
+        return null;
+    }
+
+    /** Un coup est valide s'il n'y a aucune raison de le refuser. Utilisé aussi par les IA. */
+    public boolean estCoupValide(Joueur joueur, Coup coup) {
+        return raisonCoupInvalide(joueur, coup) == null;
+    }
+
+    /** Vrai si le joueur a au moins un coup valide : on essaie chaque carte sur chaque borne. */
+    private boolean aUnCoupPossible(Joueur joueur) {
+        for (int c = 0; c < joueur.getMain().size(); c++) {
+            for (int b = 0; b < NB_BORNES; b++) {
+                if (estCoupValide(joueur, new Coup(c, b))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
