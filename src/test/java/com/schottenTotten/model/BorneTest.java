@@ -1,7 +1,6 @@
 package com.schottenTotten.model;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,23 +36,22 @@ class BorneTest {
         assertThrows(IllegalStateException.class, () -> poser(new Carte(Couleur.BLEU, 4)));
     }
 
-    // ----- Étape 3 : enlève les @Disabled quand Borne.evaluer est écrite -----
+    // ----- Étape 3 : tests de Borne.evaluer (les @Disabled ont été enlevés : evaluer est écrite) -----
+    // Chaque test pose 3 cartes du côté d'Alice, puis vérifie la combinaison détectée.
+    // Les cartes sont volontairement posées dans le désordre : evaluer doit les trier elle-même.
 
-    @Disabled("TODO étape 3")
     @Test
     void suiteCouleur() {
         poser(new Carte(Couleur.ROUGE, 5), new Carte(Couleur.ROUGE, 4), new Carte(Couleur.ROUGE, 6));
         assertEquals(Combinaison.SUITE_COULEUR, borne.evaluer(alice));
     }
 
-    @Disabled("TODO étape 3")
     @Test
     void brelan() {
         poser(new Carte(Couleur.ROUGE, 7), new Carte(Couleur.BLEU, 7), new Carte(Couleur.VERT, 7));
         assertEquals(Combinaison.BRELAN, borne.evaluer(alice));
     }
 
-    @Disabled("TODO étape 3")
     @Test
     void somme() {
         poser(new Carte(Couleur.ROUGE, 1), new Carte(Couleur.BLEU, 5), new Carte(Couleur.VERT, 9));
@@ -61,5 +59,17 @@ class BorneTest {
         assertEquals(15, borne.somme(alice));
     }
 
-    // TODO : ajoute les tests COULEUR et SUITE sur le même modèle.
+    @Test
+    void couleur() {
+        // 3 cartes bleues qui ne se suivent pas : même couleur, mais pas une suite
+        poser(new Carte(Couleur.BLEU, 9), new Carte(Couleur.BLEU, 1), new Carte(Couleur.BLEU, 5));
+        assertEquals(Combinaison.COULEUR, borne.evaluer(alice));
+    }
+
+    @Test
+    void suite() {
+        // 3, 4, 5 qui se suivent, mais de couleurs différentes : une suite simple, pas une suite couleur
+        poser(new Carte(Couleur.BLEU, 5), new Carte(Couleur.JAUNE, 3), new Carte(Couleur.ROUGE, 4));
+        assertEquals(Combinaison.SUITE, borne.evaluer(alice));
+    }
 }

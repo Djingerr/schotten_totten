@@ -39,4 +39,23 @@ public class Carte implements Comparable<Carte>{ //implements pour dire a java q
 
     }
 
+    @Override
+    public boolean equals(Object o){
+        if(this == o){ // meme objet en mémoire => meme objet
+            return true;
+        }
+        if(!(o instanceof Carte)){ // o est null ou n'est pas une Carte : pas égal
+            return false;
+        }
+        Carte autre = (Carte) o; // on sait maintenant que o est une Carte, on peut le convertir
+        return valeur == autre.valeur && couleur == autre.couleur; // == marche pour un int et pour une enum
+    }
+
+    // Règle de Java : si deux objets sont égaux avec equals, ils DOIVENT avoir le même hashCode.
+
+    @Override
+    public int hashCode(){
+        return Objects.hash(couleur, valeur);
+    }
+
 }
