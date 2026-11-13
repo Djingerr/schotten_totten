@@ -8,76 +8,59 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Un joueur : un nom, une position (0 ou 1), une main, et une stratégie.   [FINI pour l'instant]
- *
- * NOTE position : c'est l'index du joueur dans le tableau du Jeu (0 ou 1).
- * La Borne s'en sert pour savoir de quel côté poser la carte.
- *
- * NOTE strategie : null = joueur humain (c'est la Vue qui lui demande son coup).
- * Si non null = IA, on lui délègue la décision (c'est ça le polymorphisme :
- * on appelle strategie.choisirCoup(...) sans savoir QUELLE IA c'est).
- *
- * NOTE conception (à mentionner dans le rapport) : avec ce diagramme, le model dépend
- * de ai et de controller (imports ci-dessus). Ça marche, mais une alternative plus
- * "propre" serait de sortir la stratégie du Joueur. À garder en tête, pas urgent.
- */
 public class Joueur {
 
     private final String nom;
     private final int position;
     private final List<Carte> main = new ArrayList<>();
     private final Strategie strategie;
-    // TODO (plus tard, Schotten-Totten 2) : private Role role;  (ASSAILLANT / DEFENSEUR)
-
-    public Joueur(String nom, int position, Strategie strategie) {
-        if (nom == null || nom.isBlank()) {
-            throw new IllegalArgumentException("Nom vide");
+    
+    public Joueur(String nom, int position, Strategie strategie){
+        if(position != 0 && position != 1){
+            throw new IllegalArgumentException("position doit être 0 ou 1");
         }
         this.nom = nom;
-        this.position = position;
+        this.position = position; 
         this.strategie = strategie;
     }
-
-    public void piocher(Pioche pioche) {
+    public void piocher(Pioche pioche){
         main.add(pioche.piocher());
     }
 
-    /** Pose la carte n°index de sa main sur la borne. */
-    public void jouerCarte(int index, Borne borne) {
-        Carte carte = main.get(index);
-        borne.ajouterCarte(this, carte);   // si ça lève une exception, la carte reste dans la main
-        main.remove(index);
+    public void jouerCarte(int indexCarte, Borne borne){
+        Carte carte = retirerCarte(indexCarte);
+        borne.ajouterCarte(this , carte);
     }
 
-    public Carte retirerCarte(int index) {
-        return main.remove(index);
+    public Carte retirerCarte(int indexCarte){
+        if(indexCarte < 0 || indexCarte >= main.size()){
+            throw new IllegalArgumentException("on ne peut retirer une carte qui n'est pas dans la main");
+        }
+        return main.remove(indexCarte);
     }
 
-    /** Uniquement pour une IA. */
-    public Coup choisirCoup(Jeu jeu) {
-        return strategie.choisirCoup(jeu, this);
+    public Coup choisirCoup(Jeu jeu){
+        if(strategie == null){
+            throw new IllegalStateException("C'est a l'humain de choisir");
+        }
+        else{
+            return strategie.choisirCoup(jeu, this);
+        }
     }
 
-    public boolean estHumain() {
-        return strategie == null;
-    }
-
-    public String getNom() {
+    public String getNom(){
         return nom;
     }
 
-    public int getPosition() {
+    public int getPosition(){
         return position;
     }
 
-    /** Lecture seule : impossible de faire getMain().add(...) depuis l'extérieur (encapsulation). */
-    public List<Carte> getMain() {
+    public List<Carte> getMain(){ // lecture seule : personne ne peut modifier la main de l'extérieur
         return Collections.unmodifiableList(main);
     }
 
-    @Override
-    public String toString() {
-        return nom;
+    public boolean estHumain(){
+        return strategie == null;
     }
 }

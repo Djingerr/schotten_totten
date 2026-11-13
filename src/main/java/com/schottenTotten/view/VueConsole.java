@@ -1,7 +1,5 @@
 package com.schottenTotten.view;
 
-import com.schottenTotten.controller.Coup;
-import com.schottenTotten.controller.Jeu;
 import com.schottenTotten.model.Borne;
 import com.schottenTotten.model.Carte;
 import com.schottenTotten.model.Joueur;
@@ -9,47 +7,21 @@ import com.schottenTotten.model.Joueur;
 import java.util.List;
 import java.util.Scanner;
 
-/** Interface en mode texte. */
+/**
+ * On veut cette interface
+ *
+ *            Alice │ Borne │ Bob
+ *     ─────────────┼───────┼─────────
+ *          7R 2B   │ < 1   │ 5V 5B 5J
+ *                  │   2 > │ 9P
+ *
+ * <- = borne revendiquée par le joueur de gauche, -> = par celui de droite.
+ */
 public class VueConsole implements Vue {
 
+    private static final String RESET = "\u001B[0m";
+
     private final Scanner scanner = new Scanner(System.in);
-
-    /**
-     * Version volontairement simple : une ligne par borne.
-     *   Borne 1 : [7R 2B    ] | [5V       ]   (Alice)
-     *
-     * TODO (étape 4, facultatif) : un affichage plus joli (bornes en colonnes,
-     * couleurs ANSI : "\u001B[31m" + texte + "\u001B[0m" écrit en rouge).
-     */
-    @Override
-    public void afficherPlateau(Jeu jeu) {
-        Joueur j1 = jeu.getJoueur(0);
-        Joueur j2 = jeu.getJoueur(1);
-        System.out.println("\n        " + j1.getNom() + "  |  " + j2.getNom()
-                + "        (pioche : " + jeu.getTaillePioche() + ")");
-        for (Borne b : jeu.getBornes()) {
-            String proprio = b.estRevendiquee() ? "  -> " + b.getProprietaire().getNom() : "";
-            System.out.printf("Borne %d : [%-9s] | [%-9s]%s%n",
-                    b.getNumero() + 1, texte(b.getCartes(j1)), texte(b.getCartes(j2)), proprio);
-        }
-    }
-
-    @Override
-    public void afficherMain(Joueur joueur) {
-        StringBuilder sb = new StringBuilder("Main de " + joueur.getNom() + " : ");
-        List<Carte> main = joueur.getMain();
-        for (int i = 0; i < main.size(); i++) {
-            sb.append(i + 1).append(")").append(main.get(i)).append("  ");
-        }
-        System.out.println(sb);
-    }
-
-    @Override
-    public Coup demanderCoup(Joueur joueur) {
-        int carte = lireEntier("Quelle carte ? ", 1, joueur.getMain().size());
-        int borne = lireEntier("Sur quelle borne ? ", 1, Jeu.NB_BORNES);
-        return new Coup(carte - 1, borne - 1);   // l'utilisateur compte à partir de 1, Java à partir de 0
-    }
 
     @Override
     public void afficherMessage(String message) {
@@ -57,19 +29,95 @@ public class VueConsole implements Vue {
     }
 
     @Override
-    public void afficherGagnant(Joueur joueur) {
-        System.out.println("\n*** " + joueur.getNom() + " remporte la partie ! ***");
+    public int choisirOption(String titre, List<String> options) {
+        System.out.println(titre);
+        for (int i = 0; i < options.size(); i++) {
+            System.out.println("  " + (i + 1) + ") " + options.get(i));
+        }
+        return lireEntier("Choix ", 1, options.size()) - 1;
+    }
+    @Override
+    public String demanderTexte(String question) {
+        while (true) {
+            System.out.print(question);
+            String ligne = scanner.nextLine().trim();
+            if (!ligne.isEmpty()) {
+                return ligne;
+            }
+        }
+    }
+    @Override
+    public void afficherPlateau(Joueur j1, Joueur j2, List<Borne> bornes, int taillePioche) {
+        // Largeur de chaque colonne = le plus long contenu (nom ou cartes), pour que tout reste aligné
+        // même si une borne a plus de 3 cartes (variante tactique) ou si un nom est long.
+        int largeurG = j1.getNom().length();
+        int largeurD = j2.getNom().length();
+        for (Borne b : bornes) {
+            largeurG = Math.max(largeurG, brut(b.getCartes(j1)).length());
+            largeurD = Math.max(largeurD, brut(b.getCartes(j2)).length());
+        }
+
+        System.out.println();
+        System.out.println(" ".repeat(largeurG - j1.getNom().length()) + j1.getNom() + " │ Borne │ " + j2.getNom());
+        System.out.println("─".repeat(largeurG) + "─┼───────┼─" + "─".repeat(largeurD));
+
+        int bornesJ1 = 0;
+        int bornesJ2 = 0;
+        for (Borne b : bornes) {
+            Joueur proprio = b.getProprietaire();
+            if (proprio == j1) bornesJ1++;
+            if (proprio == j2) bornesJ2++;
+
+            List<Carte> gauche = b.getCartes(j1);
+            // On ne peut pas aligner avec printf("%9s") : les codes couleur sont des caractères
+            // invisibles qui seraient comptés. On calcule le décalage sur le texte sans couleur.
+            String decalage = " ".repeat(largeurG - brut(gauche).length());
+            String milieu = (proprio == j1 ? "<- " : "  ") + (b.getNumero() + 1) + (proprio == j2 ? " ->" : "  ");
+            System.out.println(decalage + colore(gauche) + " │ " + milieu + " │ " + colore(b.getCartes(j2)));
+        }
+
+        System.out.println("Pioche : " + taillePioche + " carte(s)   |   "
+                + j1.getNom() + " : " + bornesJ1 + " borne(s) <-   "
+                + j2.getNom() + " : " + bornesJ2 + " borne(s) ->");
     }
 
-    // ---------- Saisies : jamais de crash si l'utilisateur tape n'importe quoi ----------
+    @Override
+    public void afficherMain(Joueur joueur) {
+        StringBuilder sb = new StringBuilder("Main de " + joueur.getNom() + " :");
+        List<Carte> main = joueur.getMain();
+        for (int i = 0; i < main.size(); i++) {
+            sb.append("   ").append(i + 1).append(") ").append(colorer(main.get(i)));
+        }
+        System.out.println(sb);
+    }
 
-    /** Redemande tant que la saisie n'est pas un entier entre min et max. */
-    public int lireEntier(String question, int min, int max) {
+    @Override
+    public int demanderCarte(Joueur joueur) {
+        int taille = joueur.getMain().size();
+        if (taille == 0) {
+            throw new IllegalStateException(joueur.getNom() + " n'a plus de carte");
+        }
+        return lireEntier("Quelle carte ? ", 1, taille) - 1;
+    }
+
+    @Override
+    public int demanderBorne(int nbBornes) {
+        return lireEntier("Sur quelle borne ? ", 1, nbBornes) - 1;
+    }
+
+    @Override
+    public void afficherGagnant(Joueur gagnant) {
+        System.out.println(gagnant == null
+                ? "\n*** Fin de partie sans gagnant ***"
+                : "\n*** " + gagnant.getNom() + " remporte la partie ! ***");
+    }
+
+    /** En gros assert */
+    private int lireEntier(String question, int min, int max) {
         while (true) {
             System.out.print(question + "(" + min + "-" + max + ") : ");
-            String ligne = scanner.nextLine().trim();
             try {
-                int n = Integer.parseInt(ligne);
+                int n = Integer.parseInt(scanner.nextLine().trim());
                 if (n >= min && n <= max) {
                     return n;
                 }
@@ -80,21 +128,36 @@ public class VueConsole implements Vue {
         }
     }
 
-    public String lireTexte(String question) {
-        while (true) {
-            System.out.print(question);
-            String ligne = scanner.nextLine().trim();
-            if (!ligne.isEmpty()) {
-                return ligne;
-            }
+    private String colorer(Carte c) {
+        if (c.getCouleur() == null) {
+            return c.toString();
         }
+        String code = switch (c.getCouleur()) {
+            case ROUGE -> "31";
+            case VERT -> "32";
+            case JAUNE -> "33";
+            case BLEU -> "34";
+            case VIOLET -> "35";
+            case MARRON -> "38;5;130";   // pas de marron en ANSI de base : couleur n°130 sur 256
+        };
+        return "\u001B[" + code + "m" + c + RESET;
     }
 
-    private static String texte(List<Carte> cartes) {
+    /** "7R 2B" sans couleur : sert à mesurer la largeur réellement visible. */
+    private String brut(List<Carte> cartes) {
+        StringBuilder sb = new StringBuilder();
+        for (Carte c : cartes) 
+        {
+            sb.append(sb.length() == 0 ? "" : " ").append(c);
+        }
+        return sb.toString();
+    }
+
+    private String colore(List<Carte> cartes) {
         StringBuilder sb = new StringBuilder();
         for (Carte c : cartes) {
-            sb.append(c).append(' ');
+            sb.append(sb.length() == 0 ? "" : " ").append(colorer(c));
         }
-        return sb.toString().trim();
+        return sb.toString();
     }
 }

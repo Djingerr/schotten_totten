@@ -7,6 +7,9 @@ import com.schottenTotten.controller.Variante;
 import com.schottenTotten.model.Joueur;
 import com.schottenTotten.view.VueConsole;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Point d'entrée : menus de configuration, puis lancement de la partie. */
 public class Main {
 
@@ -15,21 +18,21 @@ public class Main {
         vue.afficherMessage("===== SCHOTTEN-TOTTEN =====");
 
         // 1) Variante (le menu se construit tout seul à partir de l'enum)
-        Variante[] variantes = Variante.values();
-        for (int i = 0; i < variantes.length; i++) {
-            vue.afficherMessage((i + 1) + ") " + variantes[i].getLibelle());
+        List<String> libellesVariantes = new ArrayList<>();
+        for (Variante v : Variante.values()) {
+            libellesVariantes.add(v.getLibelle());
         }
-        Variante variante = variantes[vue.lireEntier("Variante ", 1, variantes.length) - 1];
+        Variante variante = Variante.values()[vue.choisirOption("Variante :", libellesVariantes)];
 
         // 2) Joueurs
+        List<String> libellesTypes = new ArrayList<>();
+        for (TypeJoueur t : TypeJoueur.values()) {
+            libellesTypes.add(t.getLibelle());
+        }
         Joueur[] joueurs = new Joueur[2];
-        TypeJoueur[] types = TypeJoueur.values();
         for (int p = 0; p < 2; p++) {
-            String nom = vue.lireTexte("\nNom du joueur " + (p + 1) + " : ");
-            for (int i = 0; i < types.length; i++) {
-                vue.afficherMessage((i + 1) + ") " + types[i].getLibelle());
-            }
-            TypeJoueur type = types[vue.lireEntier("Type ", 1, types.length) - 1];
+            String nom = vue.demanderTexte("\nNom du joueur " + (p + 1) + " : ");
+            TypeJoueur type = TypeJoueur.values()[vue.choisirOption("Type :", libellesTypes)];
             joueurs[p] = JeuFactory.creerJoueur(nom, p, type);
         }
 

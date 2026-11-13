@@ -1,64 +1,42 @@
 package com.schottenTotten.model;
-
 import java.util.Objects;
 
-/**
- * Une carte clan : une couleur et une valeur (1 à 9).        [FINI]
- *
- * NOTE : la classe est "immuable" (champs final, pas de setter).
- * Une carte ne change jamais, ça évite plein de bugs.
- */
-public class Carte implements Comparable<Carte> {
-
+public class Carte implements Comparable<Carte>{ //implements pour dire a java qu'on va ecrire cette méthode 
     private final Couleur couleur;
     private final int valeur;
 
-    public Carte(Couleur couleur, int valeur) {
-        // Robustesse demandée par le sujet : on refuse une carte absurde dès sa création.
-        if (couleur == null) {
-            throw new IllegalArgumentException("Une carte doit avoir une couleur");
+    public Carte(Couleur couleur, int valeur){ // Test des cas extreme + association d'une couleur et d'une valeur
+        if(couleur == null){
+            throw new IllegalArgumentException("il faut une couleur");
         }
-        if (valeur < 1 || valeur > 9) {
-            throw new IllegalArgumentException("Valeur invalide : " + valeur);
+        if(valeur < 1 || valeur > 9){
+            throw new IllegalArgumentException("il faut que la valeur soit comprise entre 1 et 9");
         }
-        this.couleur = couleur;
+        this.couleur = couleur; 
         this.valeur = valeur;
     }
 
-    public Couleur getCouleur() {
+    public Couleur getCouleur(){
         return couleur;
     }
 
-    public int getValeur() {
+    public int getValeur(){ 
         return valeur;
     }
 
-    /** Trie par valeur (pratique pour détecter une suite : on trie puis on regarde si ça se suit). */
-    @Override
-    public int compareTo(Carte autre) {
-        return Integer.compare(this.valeur, autre.valeur);
+    @Override 
+    public String toString(){ // concatene le format de la carte 7R pour un 7 rouge 
+        return valeur + couleur.getSymbole();
+    }
+    @Override 
+    public int compareTo(Carte autre){ // fonction qui permet de classer dans l'ordre croissant les cartes sur la Borne plus tard
+        int resultat = Integer.compare(valeur, autre.valeur); //compare permet de faire a - b sans les bugs
+
+        if(resultat != 0){
+            return resultat;
+        }
+        return couleur.compareTo(autre.couleur);
+
     }
 
-    /**
-     * NOTE : sans equals(), deux "new Carte(ROUGE, 7)" seraient considérées différentes.
-     * Indispensable pour list.contains(), list.remove(carte) et les assertEquals des tests.
-     * Règle Java : si on redéfinit equals, on redéfinit aussi hashCode.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Carte)) return false;
-        Carte c = (Carte) o;
-        return valeur == c.valeur && couleur == c.couleur;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(couleur, valeur);
-    }
-
-    @Override
-    public String toString() {
-        return valeur + couleur.getSymbole();   // ex : "7R"
-    }
 }

@@ -65,7 +65,7 @@ public abstract class Jeu {
             gagnant = determinerGagnant();
             joueurCourant = 1 - joueurCourant;   // 0 -> 1 -> 0 -> ...
         }
-        vue.afficherPlateau(this);
+        vue.afficherPlateau(joueurs[0], joueurs[1], bornes, getTaillePioche());
         if (gagnant != null) {
             vue.afficherGagnant(gagnant);
         } else {
@@ -80,9 +80,9 @@ public abstract class Jeu {
 
         Coup coup;
         if (joueur.estHumain()) {
-            vue.afficherPlateau(this);
+            vue.afficherPlateau(joueurs[0], joueurs[1], bornes, getTaillePioche());
             vue.afficherMain(joueur);
-            coup = vue.demanderCoup(joueur);
+            coup = new Coup(vue.demanderCarte(joueur), vue.demanderBorne(NB_BORNES));
         } else {
             coup = joueur.choisirCoup(this);
         }
