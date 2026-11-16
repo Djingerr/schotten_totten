@@ -15,7 +15,7 @@ import java.util.Scanner;
  *          7R 2B   │ < 1   │ 5V 5B 5J
  *                  │   2 > │ 9P
  *
- * <- = borne revendiquée par le joueur de gauche, -> = par celui de droite.
+ * < = borne revendiquée par le joueur de gauche, > = par celui de droite.
  */
 public class VueConsole implements Vue {
 
@@ -72,13 +72,14 @@ public class VueConsole implements Vue {
             // On ne peut pas aligner avec printf("%9s") : les codes couleur sont des caractères
             // invisibles qui seraient comptés. On calcule le décalage sur le texte sans couleur.
             String decalage = " ".repeat(largeurG - brut(gauche).length());
-            String milieu = (proprio == j1 ? "<- " : "  ") + (b.getNumero() + 1) + (proprio == j2 ? " ->" : "  ");
+            // Toujours 5 caractères, comme "Borne" dans l'en-tête, sinon la ligne se décale.
+            String milieu = (proprio == j1 ? "< " : "  ") + (b.getNumero() + 1) + (proprio == j2 ? " >" : "  ");
             System.out.println(decalage + colore(gauche) + " │ " + milieu + " │ " + colore(b.getCartes(j2)));
         }
 
         System.out.println("Pioche : " + taillePioche + " carte(s)   |   "
-                + j1.getNom() + " : " + bornesJ1 + " borne(s) <-   "
-                + j2.getNom() + " : " + bornesJ2 + " borne(s) ->");
+                + j1.getNom() + " : " + bornesJ1 + " borne(s) <   "
+                + j2.getNom() + " : " + bornesJ2 + " borne(s) >");
     }
 
     @Override
@@ -129,9 +130,6 @@ public class VueConsole implements Vue {
     }
 
     private String colorer(Carte c) {
-        if (c.getCouleur() == null) {
-            return c.toString();
-        }
         String code = switch (c.getCouleur()) {
             case ROUGE -> "31";
             case VERT -> "32";

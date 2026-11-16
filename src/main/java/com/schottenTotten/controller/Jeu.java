@@ -189,6 +189,24 @@ public abstract class Jeu {
         // à compléter
     }
 
+    Joueur gagnantDeLaBorne(Borne b){
+        Joueur j1 = joueurs[0];
+        Joueur j2 = joueurs[1];
+        if (!b.estComplete(j1) || !b.estComplete(j2)){
+            return null;
+        }
+        int force1 = b.evaluer(j1).getForce();
+        int force2 = b.evaluer(j2).getForce();
+        if (force1 != force2){
+            if (force1 > force2){
+                return force1;
+            }
+            else {
+                return force2;
+            }
+        }
+    }
+
     /**
      * TODO (étape 7) : renvoyer le gagnant, ou null si personne n'a encore gagné.
      * Un joueur gagne s'il possède 5 bornes, OU 3 bornes côte à côte.
