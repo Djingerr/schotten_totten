@@ -197,14 +197,13 @@ public abstract class Jeu {
         }
         int force1 = b.evaluer(j1).getForce();
         int force2 = b.evaluer(j2).getForce();
-        if (force1 != force2){
-            if (force1 > force2){
-                return force1;
-            }
-            else {
-                return force2;
-            }
+        if (force1 > force2){
+            return j1;
         }
+        else {
+            return j2;
+        }
+        return null;
     }
 
     /**
