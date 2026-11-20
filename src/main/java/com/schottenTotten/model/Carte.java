@@ -16,6 +16,12 @@ public class Carte implements Comparable<Carte>{ //implements pour dire a java q
         this.valeur = valeur;
     }
 
+    /** Réservé à CarteTactique : une carte tactique n'a ni couleur ni valeur (null et 0). */
+    protected Carte(){
+        this.couleur = null;
+        this.valeur = 0;
+    }
+
     public Couleur getCouleur(){
         return couleur;
     }

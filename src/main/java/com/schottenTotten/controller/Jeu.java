@@ -69,7 +69,7 @@ public abstract class Jeu {
         if (gagnant != null) {
             vue.afficherGagnant(gagnant);
         } else {
-            vue.afficherMessage("Fin de partie sans gagnant (normal tant que les étapes 6 et 7 ne sont pas faites).");
+            vue.afficherMessage("Fin de partie sans gagnant.");
         }
     }
 
@@ -102,11 +102,22 @@ public abstract class Jeu {
             }
         }
 
-        joueur.jouerCarte(coup.indexCarte(), bornes.get(coup.indexBorne()));
-        vue.afficherMessage(joueur.getNom() + " pose une carte sur la borne " + (coup.indexBorne() + 1));
+        jouerCoup(joueur, coup);
 
         // NOTE règle : on pioche après avoir revendiqué. Ici c'est avant, sans conséquence
         // pour l'instant ; tu peux déplacer la pioche si tu veux coller exactement aux règles.
+        piocherApresCoup(joueur);
+    }
+
+    /** Pose la carte. Redéfini par JeuTactique pour compter les cartes tactiques jouées. */
+    protected void jouerCoup(Joueur joueur, Coup coup) {
+        String carte = joueur.getMain().get(coup.indexCarte()).toString();
+        joueur.jouerCarte(coup.indexCarte(), bornes.get(coup.indexBorne()));
+        vue.afficherMessage(joueur.getNom() + " pose " + carte + " sur la borne " + (coup.indexBorne() + 1));
+    }
+
+    /** Pioche une carte. Redéfini par JeuTactique, où l'on choisit sa pioche. */
+    protected void piocherApresCoup(Joueur joueur) {
         if (!pioche.estVide()) {
             joueur.piocher(pioche);
         }
@@ -147,7 +158,7 @@ public abstract class Jeu {
             return "la borne " + numero + " est déjà revendiquée par " + borne.getProprietaire().getNom();
         }
         if (borne.estComplete(joueur)) {
-            return "ton côté de la borne " + numero + " est déjà plein (" + Borne.CAPACITE + " cartes)";
+            return "ton côté de la borne " + numero + " est déjà plein (" + borne.capacite() + " cartes)";
         }
         return null;
     }
@@ -186,7 +197,17 @@ public abstract class Jeu {
      * Et dans la vraie règle c'est le joueur qui CHOISIT de revendiquer (demander via la Vue).
      */
     protected void verifierRevendications() {
-        // à compléter
+        for (int i = 0; i < bornes.size(); i++) {
+            Borne b = bornes.get(i);
+            if (b.getProprietaire() != null) {
+                continue;                   // déjà revendiquée
+            }
+            Joueur gagnant = gagnantDeLaBorne(b);
+            if (gagnant != null) {
+                b.revendiquer(gagnant);
+                vue.afficherMessage(gagnant.getNom() + " revendique la borne " + (i + 1) + " !");
+            }
+        }
     }
 
     Joueur gagnantDeLaBorne(Borne b){
@@ -200,25 +221,58 @@ public abstract class Jeu {
         if (force1 > force2){
             return j1;
         }
-        else {
+        if (force2 > force1){
             return j2;
+        }
+        // Même combinaison : on départage par la somme des cartes.
+        int somme1 = b.somme(j1);
+        int somme2 = b.somme(j2);
+        if (somme1 > somme2){
+            return j1;
+        }
+        if (somme2 > somme1){
+            return j2;
+        }
+        // Égalité parfaite : le premier à avoir complété son côté gagne.
+        return b.getPremierAComplete();
+    }
+
+    /** Vrai si j a gagné : 3 bornes côte à côte, ou 5 bornes au total. */
+    boolean aGagne(Joueur j){
+        int total = 0;
+        int aLaSuite = 0;
+        for (Borne b : bornes){             // On parcourt les bornes dans l'ordre.
+            if (b.getProprietaire() == j){
+                total++;
+                aLaSuite++;
+                if (aLaSuite == 3){
+                    return true;
+                }
+            } else {                        // borne libre ou à l'adversaire : la série est cassée
+                aLaSuite = 0;
+            }
+        }
+        return total >= 5;
+    }
+
+    /** Renvoie le gagnant, ou null si personne n'a encore gagné. */
+    protected Joueur determinerGagnant() {
+        if (aGagne(joueurs[0])) {
+            return joueurs[0];
+        }
+        if (aGagne(joueurs[1])) {
+            return joueurs[1];
         }
         return null;
     }
 
     /**
-     * TODO (étape 7) : renvoyer le gagnant, ou null si personne n'a encore gagné.
-     * Un joueur gagne s'il possède 5 bornes, OU 3 bornes côte à côte.
-     *   Indice pour "côte à côte" : parcourir les bornes avec un compteur qui
-     *   augmente si la borne est à lui et retombe à 0 sinon ; s'il atteint 3 -> gagné.
+     * La partie continue tant qu'au moins un joueur peut jouer.
+     * (Avoir des cartes ne suffit pas : en variante tactique, une main avec seulement un 2e Joker
+     * ne permet aucun coup, et les deux joueurs passeraient leur tour à l'infini.)
      */
-    protected Joueur determinerGagnant() {
-        return null;
-    }
-
-    /** La partie continue tant qu'au moins un joueur a des cartes. */
     private boolean partiePeutContinuer() {
-        return !joueurs[0].getMain().isEmpty() || !joueurs[1].getMain().isEmpty();
+        return aUnCoupPossible(joueurs[0]) || aUnCoupPossible(joueurs[1]);
     }
 
     // ---------- Getters (utilisés par la Vue et les IA) ----------

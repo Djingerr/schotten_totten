@@ -77,6 +77,12 @@ public class VueConsole implements Vue {
             System.out.println(decalage + colore(gauche) + " │ " + milieu + " │ " + colore(b.getCartes(j2)));
         }
 
+        for (Borne b : bornes) {
+            if (!b.getModes().isEmpty()) {
+                System.out.println("Borne " + (b.getNumero() + 1) + " : " + b.getModes()
+                        + "   (CM = Colin-Maillard : seule la somme compte, CB = Combat de boue : 4 cartes)");
+            }
+        }
         System.out.println("Pioche : " + taillePioche + " carte(s)   |   "
                 + j1.getNom() + " : " + bornesJ1 + " borne(s) <   "
                 + j2.getNom() + " : " + bornesJ2 + " borne(s) >");
@@ -130,6 +136,9 @@ public class VueConsole implements Vue {
     }
 
     private String colorer(Carte c) {
+        if (c.getCouleur() == null) {
+            return "\u001B[1m" + c + RESET;   // carte tactique : pas de couleur, en gras
+        }
         String code = switch (c.getCouleur()) {
             case ROUGE -> "31";
             case VERT -> "32";
